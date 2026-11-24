@@ -1,0 +1,44 @@
+# The two steps that publish a tag to the release feed.
+#
+# Paste these at the end of the `publish` job in the plugin repository's tag
+# workflow (the job that builds the zip and creates the GitHub release). They go
+# AFTER the release and its asset exist: publishing reads that asset.
+#
+# The job needs `permissions: contents: write`, and the release app must be
+# installed on both the source repository and memberminderpro/wp-plugin-releases.
+
+      - name: Token for the distribution repository
+        id: dist
+        continue-on-error: true
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          owner: memberminderpro
+          repositories: wp-plugin-releases
+
+      - name: Publish to the distribution repository
+        if: steps.dist.outputs.token != ''
+        env:
+          # The app token can write the feed but cannot read the private source
+          # release; the workflow's own token does that half.
+          GH_TOKEN: ${{ steps.dist.outputs.token }}
+          DEV_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          if ! gh api "repos/memberminderpro/wp-plugin-releases" >/dev/null 2>&1; then
+            echo "::notice::wp-plugin-releases is not reachable with this app; skipped publishing to the feed."
+            exit 0
+          fi
+          scripts/publish-release.sh --tag "$TAG"
+
+# Notes
+#
+# 1. Without the app: store a fine-grained token as the repository secret
+#    DIST_TOKEN, giving it Contents: read and write on wp-plugin-releases and
+#    Contents: read on the source repository, then replace the two steps with one
+#    step that sets GH_TOKEN and DEV_TOKEN to it and runs the script.
+# 2. `continue-on-error` plus the reachability check means a missing installation
+#    shows as a notice, not a red release. Check the feed after the first tag.
+# 3. The tag decides the channel: v1.2.0 is stable, v1.2.0-beta.1 is beta.
