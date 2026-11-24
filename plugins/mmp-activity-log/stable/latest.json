@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "plugin": "mmp-activity-log",
+  "channel": "stable",
+  "version": "1.2.0",
+  "released": "2026-11-24T18:29:01Z",
+  "download": "https://github.com/memberminderpro/wp-plugin-releases/releases/download/mmp-activity-log@1.2.0/mmp-activity-log-1.2.0.zip",
+  "sha256": "ef899524ee10e7edfe3fd54ab2d26a19acf344c06b6f352a69413cd8d2ac23b7"
+}
